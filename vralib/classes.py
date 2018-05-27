@@ -451,7 +451,7 @@ class Session(object):
         url = 'https://' + self.cloudurl + '/catalog-service/api/consumer/resources'
         result = self._request(url)
 
-        if result['metadata']['totalPages'] != 1:
+        if result.get("metadata", {}).get("totalPages", {}) != {} and result['metadata']['totalPages'] != 1:
             page = 2  # starting on 2 since we've already got page 1's data
             while page <= result['metadata']['totalPages']:
                 url = 'https://' + self.cloudurl + '/catalog-service/api/consumer/resources?page=%s' % page
@@ -466,6 +466,15 @@ class Session(object):
     def get_consumer_resource(self, resource_id):
         url = 'https://' + self.cloudurl + '/catalog-service/api/consumer/resources/' + resource_id
         result = self._request(url)
+        if result.get("metadata", {}).get("totalPages", {}) != {} and result['metadata']['totalPages'] != 1:
+            page = 2  # starting on 2 since we've already got page 1's data
+            while page <= result['metadata']['totalPages']:
+                url = 'https://' + self.cloudurl + '/catalog-service/api/consumer/resources/' + resource_id + '?page=%s' % page
+                next_page = self._request(url)
+                for i in next_page['content']:
+                    result['content'].append(i)
+                page += 1
+            return result
         return result
 
     def get_reservations_info(self):
